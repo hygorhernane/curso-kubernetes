@@ -1,0 +1,118 @@
+# Default values for app5-chart.
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Pod-level security context for OpenShift compatibility
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+
+# -- Service account for the pod
+serviceAccount:
+  create: true
+  name: ""
+
+# -- PVC configuration for metric data
+persistence:
+  enabled: true
+  size: 1Gi
+  # storageClassName: "" # Optional: specify if not using default
+
+# -- ConfigMap data for all Node.js apps
+config:
+  APP_TITLE: "App5 - Painel de Métricas Dinâmico"
+  GENERATION_INTERVAL_MS: "5000"
+  AGGREGATION_INTERVAL_MS: "10000"
+  # Paths for volumes
+  RAW_METRICS_DIR: "/app-data/raw"
+  PROCESSED_METRICS_DIR: "/app-data/processed"
+  DASHBOARD_DATA_PATH: "/dashboard-data/summary.json"
+  LOG_PATH: "/log-data/app.log"
+
+# -- Secret data (use 'helm --set' or secrets backend in production)
+secret:
+  SECRET_KEY: "CHANGE_ME_IN_PROD"
+
+# -- Main service configuration (points to frontend)
+service:
+  type: NodePort
+  port: 80
+
+# -- OpenShift Route configuration
+route:
+  enabled: true
+
+# =================================================================
+# Container-specific configurations
+# =================================================================
+
+frontend:
+  name: frontend
+  image:
+    repository: seu-registry/app5-frontend
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  port: 3000
+  probes:
+    liveness:
+      httpGet:
+        path: /healthz
+        port: 3000
+      initialDelaySeconds: 10
+    readiness:
+      httpGet:
+        path: /healthz
+        port: 3000
+      initialDelaySeconds: 5
+
+metricGenerator:
+  name: metric-generator
+  image:
+    repository: seu-registry/app5-metric-generator
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  # This container has no port, it only writes to a volume.
+  # A simple exec probe can check if the process is running.
+  probes:
+    liveness:
+      exec:
+        command: ["node", "-e", "process.exit(0)"]
+      initialDelaySeconds: 15
+      periodSeconds: 20
+
+processor:
+  name: processor
+  image:
+    repository: seu-registry/app5-processor
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  probes:
+    liveness:
+      exec:
+        command: ["node", "-e", "process.exit(0)"]
+      initialDelaySeconds: 15
+      periodSeconds: 20
+
+aggregator:
+  name: aggregator
+  image:
+    repository: seu-registry/app5-aggregator
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  probes:
+    liveness:
+      exec:
+        command: ["node", "-e", "process.exit(0)"]
+      initialDelaySeconds: 15
+      periodSeconds: 20
+
+logShipper:
+  name: log-shipper
+  # Using the official Fluent Bit image
+  image:
+    repository: fluent/fluent-bit
+    tag: "1.9"
+    pullPolicy: IfNotPresent
+  # Fluent Bit doesn't need a custom probe for this example.
+  # It's a well-known stable image.

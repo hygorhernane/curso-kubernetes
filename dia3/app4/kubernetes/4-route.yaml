@@ -1,0 +1,16 @@
+# 4-route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: app4-webapp-route
+  labels:
+    app: app4-webapp
+spec:
+  to:
+    kind: Service
+    name: app4-webapp-service # Nome do service da webapp
+  port:
+    targetPort: 80 # Porta 80 do service
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

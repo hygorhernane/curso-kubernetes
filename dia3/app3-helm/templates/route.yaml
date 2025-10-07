@@ -1,0 +1,15 @@
+# java-app-secrets/templates/route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "java-app-secrets.fullname" . }}
+  labels:
+    {{- include "java-app-secrets.labels" . | nindent 4 }}
+spec:
+  to:
+    kind: Service
+    name: {{ include "java-app-secrets.fullname" . }}
+    weight: 100
+  port:
+    targetPort: http 
+  wildcardPolicy: None

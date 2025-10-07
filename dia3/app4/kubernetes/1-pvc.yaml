@@ -1,0 +1,15 @@
+# 1-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app4-log-storage-pvc
+spec:
+  # A classe de armazenamento (storageClassName) depende do seu cluster.
+  # Para Minikube, 'standard' é o padrão. Para outros, pode ser 'gp2', 'managed-csi', etc.
+  # Se você não especificar, a classe padrão do cluster será usada.
+  # storageClassName: standard
+  accessModes:
+    - ReadWriteOnce # "Montável como leitura/escrita por um único nó"
+  resources:
+    requests:
+      storage: 256Mi # Solicita 256 MiB de espaço, mais que suficiente para o log.

@@ -1,0 +1,17 @@
+{{- if .Values.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "app5-chart.fullname" . }}
+  labels:
+    {{- include "app5-chart.labels" . | nindent 4 }}
+spec:
+  to:
+    kind: Service
+    name: {{ include "app5-chart.fullname" . }}
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+{{- end }}

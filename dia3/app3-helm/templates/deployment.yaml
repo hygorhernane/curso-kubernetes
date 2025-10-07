@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "java-app-secrets.fullname" . }}
+  labels:
+    {{- include "java-app-secrets.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "java-app-secrets.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "java-app-secrets.selectorLabels" . | nindent 8 }}
+    spec:
+      # --- CORREÇÃO PARA OPENSHIFT ---
+      # Adiciona o contexto de segurança para o Pod.
+      # O fsGroup garante que o volume 'shared-data' possa ser escrito pelo grupo 1001.
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      # -----------------------------
+
+      # 1. Definição do Volume Compartilhado
+      volumes:
+        - name: shared-data
+          emptyDir: {}
+          
+      containers:
+        # CONTAINER 1: JAVA LOGGER (Escritor)
+        - name: java-logger
+          image: "{{ .Values.images.logger }}"
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared # Monta o volume compartilhado
+          env:
+            # Injeta ConfigMap
+            - name: APP_TITLE
+              valueFrom: { configMapKeyRef: { name: {{ include "java-app-secrets.fullname" . }}-config, key: APP_TITLE } }
+            - name: SIDECAR_FILE_PATH # Variável CRÍTICA para o Logger saber onde salvar
+              valueFrom: { configMapKeyRef: { name: {{ include "java-app-secrets.fullname" . }}-config, key: SIDECAR_FILE_PATH } }
+            
+            # Injeta Secret
+            - name: SECRET_API_KEY
+              valueFrom: { secretKeyRef: { name: {{ include "java-app-secrets.fullname" . }}-secret, key: SECRET_API_KEY } }
+            - name: SECRET_DB_USER
+              valueFrom: { secretKeyRef: { name: {{ include "java-app-secrets.fullname" . }}-secret, key: SECRET_DB_USER } }
+            - name: SECRET_DB_PASS
+              valueFrom: { secretKeyRef: { name: {{ include "java-app-secrets.fullname" . }}-secret, key: SECRET_DB_PASS } }
+
+        # CONTAINER 2: JAVA WEB READER (Leitor)
+        - name: java-web-reader
+          image: "{{ .Values.images.reader }}"
+          ports:
+            - name: http
+              containerPort: 8080 # Porta do Spring Boot
+              protocol: TCP
+          volumeMounts:
+            - name: shared-data
+              mountPath: /shared # Monta o volume compartilhado
+          
+          env:
+            # Variáveis que o Reader precisa para saber onde ler (SIDECAR_FILE_PATH) e seu próprio título
+            - name: SIDECAR_FILE_PATH
+              valueFrom: { configMapKeyRef: { name: {{ include "java-app-secrets.fullname" . }}-config, key: SIDECAR_FILE_PATH } }
+            - name: APP_TITLE
+              valueFrom: { configMapKeyRef: { name: {{ include "java-app-secrets.fullname" . }}-config, key: APP_TITLE } }
+              
+          # Readiness Probe: Espera o Logger terminar de escrever o arquivo (10 segundos para segurança)
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10 
+            periodSeconds: 5

@@ -1,0 +1,16 @@
+1. Get the application URL by running these commands:
+{{- if .Values.route.enabled }}
+  export ROUTE_URL=$(kubectl get route {{ include "app5-chart.fullname" . }} -o jsonpath='{.spec.host}')
+  echo "URL: http://$ROUTE_URL"
+{{- else }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "app5-chart.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo "URL: http://$NODE_IP:$NODE_PORT"
+{{- end }}
+
+2. Check the status of the pods:
+   kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+3. Tail the logs of a specific container (e.g., the log-shipper):
+   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "app5-chart.name" . }}" -o jsonpath="{.items[0].metadata.name}")
+   kubectl logs $POD_NAME -c log-shipper -f

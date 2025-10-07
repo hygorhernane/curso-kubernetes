@@ -1,0 +1,6 @@
+apiVersion: v2
+name: app5-chart
+description: A Helm chart for the complex App5 micro-analytics dashboard.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

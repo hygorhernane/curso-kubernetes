@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "app5-chart.fullname" . }}
+  labels:
+    {{- include "app5-chart.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "app5-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "app5-chart.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "app5-chart.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+
+      # --- Definição dos Volumes ---
+      volumes:
+        # 1. Volume Persistente para os dados das métricas
+        - name: app-data
+        {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "app5-chart.fullname" . }}-pvc
+        {{- else }}
+          emptyDir: {}
+        {{- end }}
+        # 2. Volume Efêmero para o frontend ler o sumário
+        - name: dashboard-data
+          emptyDir: {}
+        # 3. Volume Efêmero para compartilhar logs (simulado)
+        - name: log-data
+          emptyDir: {}
+
+      # --- Definição dos Contêineres ---
+      containers:
+        # 1. Frontend
+        - name: {{ .Values.frontend.name }}
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "app5-chart.fullname" . }}-config
+          livenessProbe:
+            {{- toYaml .Values.frontend.probes.liveness | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.frontend.probes.readiness | nindent 12 }}
+          volumeMounts:
+            - name: dashboard-data
+              mountPath: /dashboard-data
+              readOnly: true
+            - name: log-data
+              mountPath: /var/log/app5
+
+        # 2. Metric Generator
+        - name: {{ .Values.metricGenerator.name }}
+          image: "{{ .Values.metricGenerator.image.repository }}:{{ .Values.metricGenerator.image.tag }}"
+          imagePullPolicy: {{ .Values.metricGenerator.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app5-chart.fullname" . }}-config
+          livenessProbe:
+            {{- toYaml .Values.metricGenerator.probes.liveness | nindent 12 }}
+          volumeMounts:
+            - name: app-data
+              mountPath: /app-data
+            - name: log-data
+              mountPath: /var/log/app5
+
+        # 3. Processor
+        - name: {{ .Values.processor.name }}
+          image: "{{ .Values.processor.image.repository }}:{{ .Values.processor.image.tag }}"
+          imagePullPolicy: {{ .Values.processor.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app5-chart.fullname" . }}-config
+            - secretRef:
+                name: {{ include "app5-chart.fullname" . }}-secret
+          livenessProbe:
+            {{- toYaml .Values.processor.probes.liveness | nindent 12 }}
+          volumeMounts:
+            - name: app-data
+              mountPath: /app-data
+            - name: log-data
+              mountPath: /var/log/app5
+
+        # 4. Aggregator
+        - name: {{ .Values.aggregator.name }}
+          image: "{{ .Values.aggregator.image.repository }}:{{ .Values.aggregator.image.tag }}"
+          imagePullPolicy: {{ .Values.aggregator.image.pullPolicy }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "app5-chart.fullname" . }}-config
+          livenessProbe:
+            {{- toYaml .Values.aggregator.probes.liveness | nindent 12 }}
+          volumeMounts:
+            - name: app-data
+              mountPath: /app-data
+              readOnly: true
+            - name: dashboard-data
+              mountPath: /dashboard-data
+            - name: log-data
+              mountPath: /var/log/app5
+
+        # 5. Log Shipper
+        - name: {{ .Values.logShipper.name }}
+          image: "{{ .Values.logShipper.image.repository }}:{{ .Values.logShipper.image.tag }}"
+          imagePullPolicy: {{ .Values.logShipper.image.pullPolicy }}
+          volumeMounts:
+            - name: log-data
+              mountPath: /var/log/app5
+              readOnly: true

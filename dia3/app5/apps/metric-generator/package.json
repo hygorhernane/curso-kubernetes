@@ -1,0 +1,12 @@
+{
+  "name": "metric-generator",
+  "version": "1.0.0",
+  "description": "Generates raw metrics for app5",
+  "main": "generator.js",
+  "scripts": {
+    "start": "node generator.js"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0"
+  }
+}

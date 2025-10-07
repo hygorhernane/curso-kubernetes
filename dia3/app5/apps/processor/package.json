@@ -1,0 +1,12 @@
+{
+  "name": "processor",
+  "version": "1.0.0",
+  "description": "Processes raw metrics for app5",
+  "main": "processor.js",
+  "scripts": {
+    "start": "node processor.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3"
+  }
+}

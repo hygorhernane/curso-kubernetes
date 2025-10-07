@@ -1,0 +1,84 @@
+# values.yaml para app2 (multi-container)
+
+replicaCount: 1
+
+# Contexto de segurança para o Pod, essencial para OpenShift
+podSecurityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+
+# Configurações do container de Frontend
+frontend:
+  image:
+    repository: seu-registry/app2-front-app-demo
+    pullPolicy: IfNotPresent
+    tag: "1.0"
+  service:
+    port: 8080
+    type: ClusterIP
+  # Sondas para o frontend
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8080
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8080
+
+# Configurações do container de Backend
+backend:
+  image:
+    repository: seu-registry/app2-back-app-demo
+    pullPolicy: IfNotPresent
+    tag: "1.0"
+  port: 8081
+  # Sondas para o backend
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8081
+  readinessProbe:
+    httpGet:
+      path: /ready
+      port: 8081
+  # Variáveis de ambiente para o backend se conectar ao DB
+  # Estes valores devem ser gerenciados por um Secret em produção
+  env:
+    DB_HOST: "postgres-service"
+    DB_PORT: "5432"
+    POSTGRES_DB: "mydb"
+    POSTGRES_USER: "myuser"
+    POSTGRES_PASSWORD: "mypassword"
+
+# Configurações de serviço, agora focadas no frontend
+service:
+  type: {{ .Values.frontend.service.type }}
+  port: {{ .Values.frontend.service.port }}
+
+# As demais configurações (ingress, resources, etc.) podem ser mantidas
+# e aplicadas a ambos os contêineres se necessário, ou customizadas.
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,9 @@
+{
+  "name": "aggregator",
+  "version": "1.0.0",
+  "description": "Aggregates processed metrics for app5",
+  "main": "aggregator.js",
+  "scripts": {
+    "start": "node aggregator.js"
+  }
+}

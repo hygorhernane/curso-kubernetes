@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1-lento-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app1-lento
+  template:
+    metadata:
+      labels:
+        app: app1-lento
+    spec:
+      # O securityContext não é estritamente necessário aqui, pois
+      # a imagem já define um usuário não-root e não precisa de acesso
+      # a volumes. No entanto, é uma boa prática ser explícito.
+      securityContext:
+        runAsUser: 1001
+        runAsGroup: 1001
+      containers:
+        - name: app1-lento
+          # IMPORTANTE: Substitua pela sua imagem
+          image: seu-registry/app1-lento:1.0
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15 # Espera a app iniciar
+            periodSeconds: 5

@@ -1,0 +1,17 @@
+# java-app-secrets/values.yaml
+
+replicaCount: 1
+
+images:
+  logger: "seu-registry/java-logger:latest" # SUBSTITUA
+  reader: "seu-registry/java-web-reader:latest" # SUBSTITUA
+  
+config:
+  app_title: "Microsservico Java Configurado (OpenShift)"
+  # Caminho onde o logger SALVA e o reader LÊ
+  sidecar_file_path: "/shared/config.log" 
+
+secret:
+  api_key: "S3CR3T_K3Y_5555"
+  db_user: "dev_user"
+  db_pass: "dev_senha_facil"

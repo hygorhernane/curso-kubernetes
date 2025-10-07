@@ -1,0 +1,10 @@
+# java-app-secrets/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "java-app-secrets.fullname" . }}-config
+  labels:
+    {{- include "java-app-secrets.labels" . | nindent 4 }}
+data:
+  APP_TITLE: {{ .Values.config.app_title | quote }}
+  SIDECAR_FILE_PATH: {{ .Values.config.sidecar_file_path | quote }}

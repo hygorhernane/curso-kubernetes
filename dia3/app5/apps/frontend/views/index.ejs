@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="5">
+  <title><%= title %></title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f4f4f9; color: #333; margin: 40px; }
+    .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h1, h2 { color: #444; }
+    .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .metric { background: #eef; padding: 20px; border-radius: 5px; text-align: center; }
+    .metric h2 { margin: 0; font-size: 1.2em; color: #559; }
+    .metric .value { font-size: 2.5em; font-weight: bold; color: #337ab7; }
+    .footer { margin-top: 20px; font-size: 0.8em; color: #777; text-align: center; }
+    .error { color: #d9534f; background: #f2dede; padding: 15px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><%= title %></h1>
+    <% if (summary.error) { %>
+      <div class="error"><%= summary.error %></div>
+    <% } else { %>
+      <div class="metrics">
+        <div class="metric">
+          <h2>Total de Métricas Processadas</h2>
+          <div class="value"><%= summary.totalMetrics %></div>
+        </div>
+        <div class="metric">
+          <h2>Valor Médio</h2>
+          <div class="value"><%= summary.averageValue.toFixed(2) %></div>
+        </div>
+      </div>
+    <% } %>
+    <div class="footer">
+      Última atualização (Agregador): <%= new Date(summary.lastUpdated).toLocaleString() %>
+    </div>
+  </div>
+</body>
+</html>

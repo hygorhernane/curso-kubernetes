@@ -1,0 +1,103 @@
+# meu-app-tres-containers/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "meu-app-tres-containers.fullname" . }}
+  labels:
+    {{- include "meu-app-tres-containers.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "meu-app-tres-containers.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "meu-app-tres-containers.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        # 1. Aplicação Web
+        - name: web-app
+          image: "{{ .Values.webApp.image }}"
+          ports:
+            - name: http
+              containerPort: {{ .Values.webApp.port }}
+              protocol: TCP
+          env:
+            {{- toYaml .Values.webApp.env | nindent 12 }}
+            # Configuração DINÂMICA do Host/Porta do DB (Localhost ou Externo)
+            - name: DB_HOST
+              {{- if .Values.externalDB.enabled }}
+              value: "{{ .Values.externalDB.host }}" 
+              {{- else }}
+              value: "localhost" # DB sidecar
+              {{- end }}
+            - name: DB_PORT
+              {{- if .Values.externalDB.enabled }}
+              value: "{{ .Values.externalDB.port }}"
+              {{- else }}
+              value: "{{ .Values.database.port | toString }}"
+              {{- end }}
+          # Exemplo de sondas (ajuste caminhos e portas conforme sua app)
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+        # 2. Contador de Acessos
+        - name: counter-app
+          image: "{{ .Values.counterApp.image }}"
+          ports:
+            - name: counter-http
+              containerPort: {{ .Values.counterApp.port }}
+              protocol: TCP
+          env:
+            {{- toYaml .Values.counterApp.env | nindent 12 }}
+            # Configuração DINÂMICA do Host/Porta do DB
+            - name: DB_HOST
+              {{- if .Values.externalDB.enabled }}
+              value: "{{ .Values.externalDB.host }}"
+              {{- else }}
+              value: "localhost" # DB sidecar
+              {{- end }}
+            - name: DB_PORT
+              {{- if .Values.externalDB.enabled }}
+              value: "{{ .Values.externalDB.port }}"
+              {{- else }}
+              value: "{{ .Values.database.port | toString }}"
+              {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: counter-http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+        
+        # 3. Banco de Dados (CONTÊINER CONDICIONAL)
+        {{- if .Values.database.enabled }}
+        - name: database
+          image: "{{ .Values.database.image }}"
+          ports:
+            - name: db-port
+              containerPort: {{ .Values.database.port }}
+              protocol: TCP
+          env:
+            {{- toYaml .Values.database.env | nindent 12 }}
+          volumeMounts:
+            - name: db-storage
+              mountPath: /var/lib/postgresql/data
+        {{- end }}
+              
+      volumes:
+        {{- if .Values.database.enabled }}
+        - name: db-storage
+          emptyDir: {} # Armazenamento efêmero. Use PVC para persistência real.
+        {{- end }}

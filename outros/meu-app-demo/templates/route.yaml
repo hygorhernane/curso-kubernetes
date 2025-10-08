@@ -1,0 +1,16 @@
+# meu-app-tres-containers/templates/route.yaml
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "meu-app-tres-containers.fullname" . }}
+  labels:
+    {{- include "meu-app-tres-containers.labels" . | nindent 4 }}
+spec:
+  # host: meu-app.apps.meucluster.com # Descomente para hostname fixo
+  to:
+    kind: Service
+    name: {{ include "meu-app-tres-containers.fullname" . }}
+    weight: 100
+  port:
+    targetPort: http # O nome da porta definida no Service
+  wildcardPolicy: None

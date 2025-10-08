@@ -6,10 +6,12 @@ RUN addgroup -g 1001 -S appgroup && \
 
 WORKDIR /usr/src/app
 
-COPY --chown=appuser:appgroup ../apps/aggregator/package*.json ./
+COPY apps/aggregator/package*.json ./
+RUN chown appuser:appgroup package*.json
 RUN npm install
 
-COPY --chown=appuser:appgroup ../apps/aggregator/ ./
+COPY apps/aggregator/ ./
+RUN chown -R appuser:appgroup .
 
 USER appuser
 

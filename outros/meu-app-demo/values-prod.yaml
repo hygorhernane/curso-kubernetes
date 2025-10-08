@@ -1,0 +1,11 @@
+# meu-app-tres-containers/values-prod.yaml
+replicaCount: 3 # Alta disponibilidade
+
+webApp:
+  image: "minha-imagem-web:v1.0.0" # Tag estável de produção
+counterApp:
+  image: "minha-imagem-contador:v1.0.0" # Tag estável de produção
+
+# Mantemos o DB sidecar aqui, mas idealmente usaríamos o externalDB em PROD.
+# Se você quiser que a Prod use o DB externo, simplesmente use o 'values-externaldb.yaml'
+# na instalação de Prod: `helm install prod-app -f values-prod.yaml -f values-externaldb.yaml .`

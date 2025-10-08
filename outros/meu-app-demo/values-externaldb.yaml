@@ -1,0 +1,10 @@
+# meu-app-tres-containers/values-externaldb.yaml
+# DESLIGA o contêiner sidecar DB
+database:
+  enabled: false
+
+# LIGA e configura o DB externo
+externalDB:
+  enabled: true
+  host: "db-prod-01.us-east-1.rds.amazonaws.com" # Endpoint real
+  port: "5432"

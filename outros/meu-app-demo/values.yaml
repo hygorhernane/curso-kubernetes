@@ -1,0 +1,39 @@
+# meu-app-tres-containers/values.yaml
+replicaCount: 1
+
+webApp:
+  image: "minha-imagem-web:dev-latest" # Substitua pela sua imagem real
+  port: 8080
+  env:
+    # Estas ENVs são preenchidas dinamicamente no deployment.yaml
+    - name: COUNTER_URL
+      value: "http://localhost:8081" 
+    # Adicione outras ENVs que sua aplicação web precise
+    - name: LOG_LEVEL
+      value: "DEBUG"
+
+counterApp:
+  image: "minha-imagem-contador:dev-latest" # Substitua pela sua imagem real
+  port: 8081
+  env:
+    # Adicione outras ENVs que sua aplicação contador precise
+    - name: CACHE_TTL
+      value: "300"
+
+database:
+  enabled: true # Contêiner sidecar DB está ATIVO por padrão
+  image: "postgres:14-alpine" 
+  port: 5432
+  # Credenciais (ATENÇÃO: Use Secrets em produção!)
+  env:
+    - name: POSTGRES_DB
+      value: "mydb"
+    - name: POSTGRES_USER
+      value: "myuser"
+    - name: POSTGRES_PASSWORD
+      value: "mypassword"
+
+externalDB:
+  enabled: false # DB externo está DESATIVADO por padrão
+  host: "db.exemplo.com" # Placeholder
+  port: "5432"

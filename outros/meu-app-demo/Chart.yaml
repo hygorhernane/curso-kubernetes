@@ -1,0 +1,7 @@
+# meu-app-tres-containers/Chart.yaml
+apiVersion: v2
+name: meu-app-tres-containers
+description: Um Helm chart para aplicação multi-container com interdependencia no OpenShift.
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

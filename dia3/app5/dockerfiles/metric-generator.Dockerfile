@@ -6,10 +6,12 @@ RUN addgroup -g 1001 -S appgroup && \
 
 WORKDIR /usr/src/app
 
-COPY --chown=appuser:appgroup ../apps/metric-generator/package*.json ./
+COPY apps/metric-generator/package*.json ./
+RUN chown appuser:appgroup package*.json
 RUN npm install
 
-COPY --chown=appuser:appgroup ../apps/metric-generator/ ./
+COPY apps/metric-generator/ ./
+RUN chown -R appuser:appgroup .
 
 USER appuser
 

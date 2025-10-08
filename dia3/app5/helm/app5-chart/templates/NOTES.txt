@@ -1,11 +1,11 @@
 1. Get the application URL by running these commands:
-{{- if .Values.route.enabled }}
-  export ROUTE_URL=$(kubectl get route {{ include "app5-chart.fullname" . }} -o jsonpath='{.spec.host}')
-  echo "URL: http://$ROUTE_URL"
+{{- if .Values.ingress.enabled }}
+  export APP_HOST=$(kubectl get ingress {{ include "app5-chart.fullname" . }} -o jsonpath='{.spec.rules[0].host}')
+  echo "App is available at http://$APP_HOST"
 {{- else }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "app5-chart.fullname" . }})
   export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
-  echo "URL: http://$NODE_IP:$NODE_PORT"
+  echo http://$NODE_IP:$NODE_PORT
 {{- end }}
 
 2. Check the status of the pods:

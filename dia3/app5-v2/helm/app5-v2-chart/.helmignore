@@ -1,0 +1,22 @@
+# Patterns to ignore when building packages.
+# This will prevent Helm from recursively packaging charts.
+charts/
+# Common VCS files
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+# Common backup files
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+# Various IDEs
+.project
+.idea/
+*.tmproj
+.vscode/

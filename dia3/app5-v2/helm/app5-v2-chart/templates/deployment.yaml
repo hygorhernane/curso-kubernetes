@@ -1,0 +1,26 @@
+{{- /*
+Para cada microsserviço definido no values.yaml, renderiza um deployment.
+*/ -}}
+
+{{- /* Deployment para o Frontend */ -}}
+{{- include "app5-v2-chart.microservice-deployment" (dict "service" .Values.frontend "root" .) }}
+
+---
+
+{{- /* Deployment para o Metric Generator */ -}}
+{{- include "app5-v2-chart.microservice-deployment" (dict "service" .Values.metricGenerator "root" .) }}
+
+---
+
+{{- /* Deployment para o Processor */ -}}
+{{- include "app5-v2-chart.microservice-deployment" (dict "service" .Values.processor "root" .) }}
+
+---
+
+{{- /* Deployment para o Aggregator */ -}}
+{{- include "app5-v2-chart.microservice-deployment" (dict "service" .Values.aggregator "root" .) }}
+
+---
+
+{{- /* Deployment para o Log Shipper */ -}}
+{{- include "app5-v2-chart.microservice-deployment" (dict "service" .Values.logShipper "root" .) }}

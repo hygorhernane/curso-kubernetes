@@ -1,0 +1,116 @@
+
+# Pipeline de CI para a aplicação app5
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - dia3/app5/apps/*
+      - dia3/app5/dockerfiles/*
+
+variables:
+  # --- Conexão com o Registro de Contêiner ---
+  # Crie uma conexão de serviço do tipo "Docker Registry" no Azure DevOps
+  # e coloque o nome dela aqui.
+  dockerRegistryServiceConnection: '$(DOCKER_REGISTRY_SERVICE_CONNECTION)'
+
+  # --- URL do Registro de Imagem (ex: myregistry.azurecr.io) ---
+  imageRegistryUrl: '$(IMAGE_REGISTRY_URL)'
+
+  # --- Repositório de Imagem (ex: my-app5-images) ---
+  imageRepository: '$(IMAGE_REPOSITORY)'
+  
+  # --- Configuração do Git para fazer o commit de volta ---
+  gitUserEmail: '$(GIT_USER_EMAIL)'
+  gitUserName: 'Azure Pipelines'
+  
+  # --- Caminho para o chart do Helm ---
+  helmChartPath: '$(Build.SourcesDirectory)/dia3/app5/helm/app5-chart'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+- stage: Build_and_Push_Images
+  displayName: 'Build and Push Images'
+  jobs:
+  - job: Frontend
+    displayName: 'Build Frontend'
+    steps:
+    - script: |
+        docker build -t $(imageRegistryUrl)/$(imageRepository)/app5-frontend:$(Build.BuildId) -f $(Build.SourcesDirectory)/dia3/app5/dockerfiles/frontend.Dockerfile .
+        docker login $(imageRegistryUrl) --username $(DOCKER_REGISTRY_USERNAME) --password $(DOCKER_REGISTRY_PASSWORD)
+        docker push $(imageRegistryUrl)/$(imageRepository)/app5-frontend:$(Build.BuildId)
+      displayName: 'Build and Push Frontend Image'
+      env:
+        DOCKER_REGISTRY_USERNAME: $(DOCKER_REGISTRY_USERNAME)
+        DOCKER_REGISTRY_PASSWORD: $(DOCKER_REGISTRY_PASSWORD)
+
+    - script: |
+        bash $(Build.SourcesDirectory)/dia4/pipeline-app5/update-image-tag.sh $(helmChartPath)/values.yaml frontend.image.tag $(Build.BuildId)
+      displayName: 'Update Frontend image tag'
+
+  - job: MetricGenerator
+    displayName: 'Build Metric Generator'
+    steps:
+    - script: |
+        docker build -t $(imageRegistryUrl)/$(imageRepository)/app5-metric-generator:$(Build.BuildId) -f $(Build.SourcesDirectory)/dia3/app5/dockerfiles/metric-generator.Dockerfile .
+        docker login $(imageRegistryUrl) --username $(DOCKER_REGISTRY_USERNAME) --password $(DOCKER_REGISTRY_PASSWORD)
+        docker push $(imageRegistryUrl)/$(imageRepository)/app5-metric-generator:$(Build.BuildId)
+      displayName: 'Build and Push Metric Generator Image'
+      env:
+        DOCKER_REGISTRY_USERNAME: $(DOCKER_REGISTRY_USERNAME)
+        DOCKER_REGISTRY_PASSWORD: $(DOCKER_REGISTRY_PASSWORD)
+
+    - script: |
+        bash $(Build.SourcesDirectory)/dia4/pipeline-app5/update-image-tag.sh $(helmChartPath)/values.yaml metricGenerator.image.tag $(Build.BuildId)
+      displayName: 'Update Metric Generator image tag'
+
+  - job: Processor
+    displayName: 'Build Processor'
+    steps:
+    - script: |
+        docker build -t $(imageRegistryUrl)/$(imageRepository)/app5-processor:$(Build.BuildId) -f $(Build.SourcesDirectory)/dia3/app5/dockerfiles/processor.Dockerfile .
+        docker login $(imageRegistryUrl) --username $(DOCKER_REGISTRY_USERNAME) --password $(DOCKER_REGISTRY_PASSWORD)
+        docker push $(imageRegistryUrl)/$(imageRepository)/app5-processor:$(Build.BuildId)
+      displayName: 'Build and Push Processor Image'
+      env:
+        DOCKER_REGISTRY_USERNAME: $(DOCKER_REGISTRY_USERNAME)
+        DOCKER_REGISTRY_PASSWORD: $(DOCKER_REGISTRY_PASSWORD)
+
+    - script: |
+        bash $(Build.SourcesDirectory)/dia4/pipeline-app5/update-image-tag.sh $(helmChartPath)/values.yaml processor.image.tag $(Build.BuildId)
+      displayName: 'Update Processor image tag'
+
+  - job: Aggregator
+    displayName: 'Build Aggregator'
+    steps:
+    - script: |
+        docker build -t $(imageRegistryUrl)/$(imageRepository)/app5-aggregator:$(Build.BuildId) -f $(Build.SourcesDirectory)/dia3/app5/dockerfiles/aggregator.Dockerfile .
+        docker login $(imageRegistryUrl) --username $(DOCKER_REGISTRY_USERNAME) --password $(DOCKER_REGISTRY_PASSWORD)
+        docker push $(imageRegistryUrl)/$(imageRepository)/app5-aggregator:$(Build.BuildId)
+      displayName: 'Build and Push Aggregator Image'
+      env:
+        DOCKER_REGISTRY_USERNAME: $(DOCKER_REGISTRY_USERNAME)
+        DOCKER_REGISTRY_PASSWORD: $(DOCKER_REGISTRY_PASSWORD)
+
+    - script: |
+        bash $(Build.SourcesDirectory)/dia4/pipeline-app5/update-image-tag.sh $(helmChartPath)/values.yaml aggregator.image.tag $(Build.BuildId)
+      displayName: 'Update Aggregator image tag'
+
+- stage: Commit_Changes
+  displayName: 'Commit Changes'
+  jobs:
+  - job: Commit
+    displayName: 'Commit values.yaml'
+    steps:
+    - script: |
+        git config --global user.email "$(gitUserEmail)"
+        git config --global user.name "$(gitUserName)"
+        git checkout main
+        git add $(helmChartPath)/values.yaml
+        git commit -m "Update image tags to build $(Build.BuildId) [skip ci]"
+        git push
+      displayName: 'Commit and Push values.yaml'

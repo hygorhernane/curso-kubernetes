@@ -21,7 +21,7 @@ spec:
       containers:
         - name: app1-lento
           # IMPORTANTE: Substitua pela sua imagem
-          image: seu-registry/app1-lento:1.0
+          image: quay.io/hygorhernane/app1:latest
           ports:
             - containerPort: 8080
               name: http

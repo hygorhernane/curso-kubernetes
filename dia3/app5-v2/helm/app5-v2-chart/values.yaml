@@ -1,0 +1,144 @@
+# values.yaml para app5-v2-chart
+
+nameOverride: ""
+fullnameOverride: ""
+
+# -- Pod-level security context
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+
+# -- Service account para os pods
+serviceAccount:
+  create: true
+  name: ""
+
+# -- Definição central dos volumes
+volumes:
+  - name: app-data
+    persistentVolumeClaim:
+      claimName: {{ include "app5-v2-chart.fullname" . }}-pvc
+  - name: dashboard-data
+    emptyDir: {}
+  - name: log-data
+    emptyDir: {}
+
+# -- Configuração do PVC
+persistence:
+  enabled: true
+  size: 1Gi
+
+# -- ConfigMap e Secret globais
+config:
+  APP_TITLE: "App5-v2 - Painel de Métricas Distribuído"
+  GENERATION_INTERVAL_MS: "5000"
+  AGGREGATION_INTERVAL_MS: "10000"
+  RAW_METRICS_DIR: "/app-data/raw"
+  PROCESSED_METRICS_DIR: "/app-data/processed"
+  DASHBOARD_DATA_PATH: "/dashboard-data/summary.json"
+  LOG_PATH: "/log-data/app.log"
+
+secret:
+  SECRET_KEY: "CHANGE_ME_IN_PROD"
+
+# =================================================================
+# Configurações por Microsserviço
+# =================================================================
+
+frontend:
+  name: frontend
+  image:
+    repository: quay.io/hygorhernane/app5-frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  port: 3000
+  service:
+    type: NodePort
+    port: 80
+  probes:
+    liveness:
+      httpGet:
+        path: /healthz
+        port: 3000
+      initialDelaySeconds: 10
+    readiness:
+      httpGet:
+        path: /healthz
+        port: 3000
+      initialDelaySeconds: 5
+  volumeMounts:
+    - name: dashboard-data
+      mountPath: /dashboard-data
+      readOnly: true
+    - name: log-data
+      mountPath: /var/log/app5
+
+metricGenerator:
+  name: metric-generator
+  image:
+    repository: quay.io/hygorhernane/app5-metric-generator
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  probes:
+    liveness:
+      exec:
+        command: ["node", "-e", "process.exit(0)"]
+      initialDelaySeconds: 15
+      periodSeconds: 20
+  volumeMounts:
+    - name: app-data
+      mountPath: /app-data
+    - name: log-data
+      mountPath: /var/log/app5
+
+processor:
+  name: processor
+  useSecret: true
+  image:
+    repository: quay.io/hygorhernane/app5-processor
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  probes:
+    liveness:
+      exec:
+        command: ["node", "-e", "process.exit(0)"]
+      initialDelaySeconds: 15
+      periodSeconds: 20
+  volumeMounts:
+    - name: app-data
+      mountPath: /app-data
+    - name: log-data
+      mountPath: /var/log/app5
+
+aggregator:
+  name: aggregator
+  image:
+    repository: quay.io/hygorhernane/app5-aggregator
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  probes:
+    liveness:
+      exec:
+        command: ["node", "-e", "process.exit(0)"]
+      initialDelaySeconds: 15
+      periodSeconds: 20
+  volumeMounts:
+    - name: app-data
+      mountPath: /app-data
+      readOnly: true
+    - name: dashboard-data
+      mountPath: /dashboard-data
+    - name: log-data
+      mountPath: /var/log/app5
+
+logShipper:
+  name: log-shipper
+  image:
+    repository: fluent/fluent-bit
+    tag: "1.9"
+    pullPolicy: IfNotPresent
+  volumeMounts:
+    - name: log-data
+      mountPath: /var/log/app5
+      readOnly: true
